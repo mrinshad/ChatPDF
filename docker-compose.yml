@@ -4,7 +4,7 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile.frontend  # Specify Dockerfile name if not default
+      dockerfile: Dockerfile
     ports:
       - "3000:80"
     depends_on:
@@ -14,7 +14,7 @@ services:
   backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile.backend  # Specify Dockerfile name if not default
+      dockerfile: Dockerfile
     ports:
       - "8000:8000"
     volumes:
