@@ -22,8 +22,8 @@ The ChatPDF is a web-based platform that allows users to upload documents for co
 
 1. **Clone the Repository**
    ```bash
-   git clone https://github.com/yourusername/document-processing-app.git
-   cd document-processing-app
+   git clone git@github.com:mrinshad/ChatPDF.git
+   cd ChatPDF
    ```
 
 2. **Create a .env File In the root directory, create a .env file and add the following variables:**
@@ -31,6 +31,7 @@ The ChatPDF is a web-based platform that allows users to upload documents for co
     ```bash
     UNSTRUCTUREDIO_API_KEY=your_unstructured_io_api_key
     GEMINI_API_KEY=your_gemini_api_key
+    UNSTRUCTUREDIO_ENDPOINT=https://your_unstructured_io_url
     SUPABASE_URL=https://your_supabase_url
     SUPABASE_KEY=your_supabase_key
     ALLOWED_ORIGINS=http://localhost:3000
