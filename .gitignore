@@ -1,5 +1,3 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
 # dependencies
 /frontend/node_modules
 /frontend/.pnp
@@ -23,12 +21,15 @@
 /frontend/yarn-error.log*
 
 # other
-/.vscode*
+/frontend/.vscode*
 /backend/__pycache__
 /backend/DUMB
 /backend/backup
 /backend/output
 /backend/uploaded_documents
-/backend/.env
+# Ignore .env files in all folders
+**/.env
+
+# Ignore .vscode folder at the root
 /my_output
 /uploaded_documents

@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom'; // Import useNavigate
 import Spinner from 'react-bootstrap/Spinner'; // Import Spinner from react-bootstrap
 
-axios.defaults.baseURL = 'http://localhost:8000'; // Set base URL for API requests
+axios.defaults.baseURL = 'http://192.168.111.129:8000'; // Set base URL for API requests
 
 const Upload = () => {
     const [file, setFile] = useState(null);
@@ -26,6 +26,7 @@ const Upload = () => {
                     'Content-Type': 'multipart/form-data'
                 }
             });
+            console.log("doc_id",response.data.document_id );
 
             // Navigate to the chat page with the document_id after successful upload
             navigate(`/chat/${response.data.document_id}`);
