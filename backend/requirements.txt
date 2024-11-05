@@ -1,0 +1,5 @@
+fastapi
+uvicorn
+pydantic
+unstructured-ingest
+supabase-python
