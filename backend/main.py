@@ -31,9 +31,6 @@ OUTPUT_DIRECTORY = "./output"
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 ALLOWED_ORIGINS = os.getenv('ALLOWED_ORIGINS', 'http://localhost:3000').split(',')
 
-# print(f"UNSTRUCTUREDIO_API_KEY: {UNSTRUCTUREDIO_API_KEY}")  # Debugging line
-# print(f"UNSTRUCTUREDIO_ENDPOINT: {UNSTRUCTUREDIO_ENDPOINT}")  # Debugging line
-
 # Create directories if they don't exist
 os.makedirs(OUTPUT_DIRECTORY, exist_ok=True)
 os.makedirs(UPLOAD_DIRECTORY, exist_ok=True)
