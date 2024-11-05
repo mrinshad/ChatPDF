@@ -1,9 +1,13 @@
+import os
+import uuid
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from typing import List, Dict
-import os
-import uuid
+from typing import List
+from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
+import google.generativeai as genai
+from supabase import create_client
 from unstructured_ingest.v2.pipeline.pipeline import Pipeline
 from unstructured_ingest.v2.interfaces import ProcessorConfig
 from unstructured_ingest.v2.processes.connectors.local import (
@@ -13,11 +17,29 @@ from unstructured_ingest.v2.processes.connectors.local import (
     LocalUploaderConfig
 )
 from unstructured_ingest.v2.processes.partitioner import PartitionerConfig
-from fastapi.middleware.cors import CORSMiddleware 
 
-from constants import UNSTRUCTUREDIO_API_KEY,UNSTRUCTUREDIO_ENDPOINT,OUTPUT_DIRECTORY, UPLOAD_DIRECTORY,model
-from models import User
-import utils
+# Load environment variables from .env file
+load_dotenv()
+
+# Configure directories
+UPLOAD_DIRECTORY = "./uploaded_documents"
+OUTPUT_DIRECTORY = "./output"
+os.makedirs(UPLOAD_DIRECTORY, exist_ok=True)
+os.makedirs(OUTPUT_DIRECTORY, exist_ok=True)
+
+# Configure unstructured.io
+UNSTRUCTUREDIO_API_KEY = os.getenv("UNSTRUCTUREDIO_API_KEY")
+UNSTRUCTUREDIO_ENDPOINT = "https://api.unstructuredapp.io/general/v0/general"
+
+# Configure Gemini
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+genai.configure(api_key=GEMINI_API_KEY)
+model = genai.GenerativeModel("gemini-1.5-flash")
+
+# Set Supabase credentials
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # Initialize FastAPI
 app = FastAPI()
@@ -25,13 +47,11 @@ app = FastAPI()
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Adjust this to your frontend origin
+    allow_origins=["http://localhost:3000"],  # Adjust to your frontend origin
     allow_credentials=True,
-    allow_methods=["*"],  # Allows all methods (GET, POST, OPTIONS, etc.)
-    allow_headers=["*"],  # Allows all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
-
-
 
 # Initialize document storage
 documents_db = {}
@@ -50,8 +70,8 @@ def process_document_with_unstructured(file_path: str) -> str:
             source_connection_config=LocalConnectionConfig(),
             partitioner_config=PartitionerConfig(
                 partition_by_api=True,
-                api_key= UNSTRUCTUREDIO_API_KEY,
-                partition_endpoint= UNSTRUCTUREDIO_ENDPOINT,
+                api_key=UNSTRUCTUREDIO_API_KEY,
+                partition_endpoint=UNSTRUCTUREDIO_ENDPOINT,
                 strategy="hi_res",
                 additional_partition_args={
                     "split_pdf_page": True,
@@ -63,7 +83,7 @@ def process_document_with_unstructured(file_path: str) -> str:
         ).run()
         
         # Read the processed output
-        output_file = os.path.join(OUTPUT_DIRECTORY, os.path.basename(file_path)) +'.json'
+        output_file = os.path.join(OUTPUT_DIRECTORY, os.path.basename(file_path)) + '.json'
         if os.path.exists(output_file):
             with open(output_file, 'r', encoding='utf-8') as f:
                 return f.read()
@@ -74,8 +94,6 @@ def process_document_with_unstructured(file_path: str) -> str:
 def query_document_with_gemini(document_content: str, query: str) -> str:
     """Process query using Gemini model"""
     try:
-
-        # Create a prompt that combines the document content and query
         prompt = f"""
         Based on the following document content, please answer the question.
         
@@ -92,45 +110,18 @@ def query_document_with_gemini(document_content: str, query: str) -> str:
     except Exception as e:
         raise Exception(f"Error processing query with Gemini: {str(e)}")
 
-# supabase
-@app.post("/signup")
-async def sign_up(user: User):
-    try:
-        response = utils.create_user(user.email, user.password)
-        
-        # Check for a confirmation or successful creation
-        if not response or response.confirmed_at is None:
-            raise HTTPException(status_code=400, detail="User creation failed.")
-        
-        # Return relevant user information
-        return JSONResponse(content={
-            "message": "User created successfully",
-            "data": {
-                "id": response.id,
-                "email": response.email,
-                "created_at": response.created_at.isoformat(),
-            }
-        })
-        
-    except Exception as e:
-        # Handle any exceptions during user creation
-        raise HTTPException(status_code=500, detail=str(e))
-
 @app.post("/upload")
 async def upload_document(file: UploadFile = File(...)):
     """Upload and process a document"""
     file_id = str(uuid.uuid4())
     file_path = os.path.join(UPLOAD_DIRECTORY, f"{file_id}_{file.filename}")
     
-    # Save uploaded file
     try:
         with open(file_path, "wb") as f:
             f.write(await file.read())
         
-        # Process document using unstructured.io
         processed_content = process_document_with_unstructured(file_path)
         
-        # Store document data
         documents_db[file_id] = {
             "file_name": file.filename,
             "file_path": file_path,
@@ -169,7 +160,6 @@ async def list_documents():
         "document_id": doc_id,
         "file_name": info["file_name"]
     } for doc_id, info in documents_db.items()]
-
 
 if __name__ == "__main__":
     import uvicorn
